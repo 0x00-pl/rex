@@ -24,6 +24,12 @@ class nfa:
         def discard_edge(self, edge: 'nfa.nfa_edge'):
             self.edges.discard(edge)
 
+        def __str__(self):
+            ret = str(id(self))
+            ret += '->'
+            ret += ', '.join([str(id(i.dest)) for i in self.edges])
+            return ret
+
     def __init__(self, nodes: typing.AbstractSet['nfa.nfa_node'], start_node: 'nfa.nfa_node',
                  end_nodes: typing.AbstractSet['nfa.nfa_node']):
         self.nodes = set(nodes)
@@ -42,21 +48,33 @@ class nfa:
             src_node.add_edges(edge.dest.edges)
             src_node.discard_edge(edge)
 
+    def __str__(self):
+        ret = ''
+        for node in self.nodes:
+            if node == self.start_node:
+                ret += '[s]'
+            elif node in self.end_nodes:
+                ret += '[e]'
+            ret += str(node)
+            ret += '\n'
+        return ret
+
 
 def make_seq_nfa(pred_builder_list: typing.Sequence[typing.Union[nfa.pred_builder_type, nfa]]):
-    ret_nodes: typing.Set[nfa.nfa_node] = set()
     ret_start = nfa.nfa_node()
     ret_end: nfa.nfa_node = ret_start
+    ret_nodes: typing.Set[nfa.nfa_node] = {ret_start}
     for pred_builder in pred_builder_list:
         if isinstance(pred_builder, nfa):
             pred_nfa = pred_builder
             assert (len(pred_nfa.end_nodes) == 1)
-            ret_nodes |= set(pred_builder.nodes)
+            ret_nodes |= pred_builder.nodes
             new_end = next(iter(pred_nfa.end_nodes))
             ret_end.add_edges({nfa.nfa_edge(nfa.eps_builder, pred_nfa.start_node)})
             ret_end = new_end
         else:
             new_end = nfa.nfa_node()
+            ret_nodes.add(new_end)
             ret_end.add_edges({nfa.nfa_edge(pred_builder, new_end)})
             ret_end = new_end
 
@@ -65,14 +83,14 @@ def make_seq_nfa(pred_builder_list: typing.Sequence[typing.Union[nfa.pred_builde
     return ret
 
 
-
-
 class builders:
     any_obj = object()
 
     @staticmethod
     def make_pred_builder(obj):
-        if id(obj) == id(builders.any_obj):
+        if isinstance(obj, nfa):
+            return obj
+        elif id(obj) == id(builders.any_obj):
             return lambda: lambda l, i: (True, 1)
         else:
             return lambda: lambda l, i: (True, 1) if l[i] == obj else (False, 0)
@@ -103,14 +121,17 @@ def rex_match(exp_nfa: nfa, target: typing.Sequence[typing.Any]):
         for edge in item.node.edges:
             res, delta = edge.pred_builder()(item.target, item.idx)
             if res:
-                if edge.next in exp_nfa.end_nodes:
+                if edge.dest in exp_nfa.end_nodes:
                     return True
-                iter_set.append(matching_iter(exp_nfa, edge.next, item.target, item.idx + delta))
+                iter_set.append(matching_iter(exp_nfa, edge.dest, item.target, item.idx + delta))
 
 
 def nfa_test():
     target = [1, 2, 3, 4, 5]
-    exp_nfa = make_seq_nfa([builders.make_pred_builder(i) for i in [1, 2, builders.any_obj, 4, 5]])
+    exp_nfa_inner = make_seq_nfa([builders.make_pred_builder(i) for i in [4, 5]])
+    print('exp_nfa_inner: ', str(exp_nfa_inner))
+    exp_nfa = make_seq_nfa([builders.make_pred_builder(i) for i in [1, 2, builders.any_obj, exp_nfa_inner]])
+    print('exp_nfa: ', str(exp_nfa))
     res = rex_match(exp_nfa, target)
     print('matching result:', res)
 
