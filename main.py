@@ -2,32 +2,52 @@ import collections
 import typing
 
 
+class function_with_name:
+    def __init__(self, func, name):
+        self.func = func
+        self.name = name
+
+    def __call__(self, *args, **kwargs):
+        return self.func(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class nfa:
     # () -> (list, index) -> (matched, index_delta)
     pred_builder_type = typing.Callable[
         [], typing.Callable[[typing.Sequence[typing.Any], int], typing.Tuple[bool, int]]]
 
     class nfa_edge:
-        def __init__(self, pred_builder: 'nfa.pred_builder_type', dest: 'nfa.nfa_node'):
+        def __init__(self, pred_builder: 'nfa.pred_builder_type', dest: 'nfa.nfa_node', name=None):
             self.pred_builder = pred_builder
             self.dest = dest
+            self.name = name
 
-    eps_builder: pred_builder_type = lambda: lambda l, idx: (True, 0)
+    eps_builder: pred_builder_type = function_with_name(lambda: lambda l, idx: (True, 0), 'eps')
 
     class nfa_node:
         def __init__(self, edges: typing.AbstractSet['nfa.nfa_edge'] = None):
             self.edges: typing.MutableSet['nfa.nfa_edge'] = set(edges) if edges is not None else set()
 
+        def copy(self):
+            return nfa.nfa_node(self.edges)
+
         def add_edges(self, edges: typing.AbstractSet['nfa.nfa_edge']):
             self.edges |= edges
+
+        def add_eps_edge(self, node: 'nfa.nfa_node'):
+            self.edges.add(nfa.nfa_edge(nfa.eps_builder, node, 'eps'))
 
         def discard_edge(self, edge: 'nfa.nfa_edge'):
             self.edges.discard(edge)
 
         def __str__(self):
-            ret = str(id(self))
-            ret += '->'
-            ret += ', '.join([str(id(i.dest)) for i in self.edges])
+            ret = ''
+            for edge in self.edges:
+                ret += str(id(self)) + ' --> ' + str(id(edge.dest)) + (' : ' + edge.name if edge.name else '') + '\n'
+
             return ret
 
     def __init__(self, nodes: typing.AbstractSet['nfa.nfa_node'], start_node: 'nfa.nfa_node',
@@ -35,6 +55,19 @@ class nfa:
         self.nodes = set(nodes)
         self.start_node = start_node
         self.end_nodes = set(end_nodes)
+
+    def gc_nodes(self):
+        keep_nodes = {self.start_node}
+        edge_nodes = {self.start_node}
+        while len(edge_nodes) > 0:
+            item = edge_nodes.pop()
+            for edge in item.edges:
+                dest = edge.dest
+                if dest not in keep_nodes:
+                    keep_nodes.add(dest)
+                    edge_nodes.add(dest)
+
+        self.nodes = keep_nodes
 
     def elimit_eps(self):
         edges_need_be_removed = set()
@@ -48,39 +81,60 @@ class nfa:
             src_node.add_edges(edge.dest.edges)
             src_node.discard_edge(edge)
 
-    def __str__(self):
-        ret = ''
+        self.gc_nodes()
+
+    def copy(self):
+        mapping: typing.Mapping['nfa.nfa_node', 'nfa.nfa_node'] = {}
         for node in self.nodes:
-            if node == self.start_node:
-                ret += '[s]'
-            elif node in self.end_nodes:
-                ret += '[e]'
+            mapping[node] = node.copy()
+
+        # relink
+        for new_node in mapping.values():
+            for edge in new_node.edges:
+                edge.dest = mapping[edge.dest]
+
+        return nfa(set(mapping.values()), mapping[self.start_node], set(mapping[i]for i in self.end_nodes))
+
+    def __str__(self):
+        ret = 'https://www.planttext.com/\n@startuml\n\n'
+        ret += str(id(self.start_node)) + ' : start\n'
+        for node in self.end_nodes:
+            ret += str(id(node)) + ' : end\n'
+
+        for node in self.nodes:
             ret += str(node)
-            ret += '\n'
+        ret += '\n@enduml\n'
         return ret
 
 
 def make_seq_nfa(pred_builder_list: typing.Sequence[typing.Union[nfa.pred_builder_type, nfa]]):
     ret_start = nfa.nfa_node()
-    ret_end: nfa.nfa_node = ret_start
+    ret_ends: typing.Set[nfa.nfa_node] = {ret_start}
     ret_nodes: typing.Set[nfa.nfa_node] = {ret_start}
     for pred_builder in pred_builder_list:
         if isinstance(pred_builder, nfa):
-            pred_nfa = pred_builder
-            assert (len(pred_nfa.end_nodes) == 1)
-            ret_nodes |= pred_builder.nodes
-            new_end = next(iter(pred_nfa.end_nodes))
-            ret_end.add_edges({nfa.nfa_edge(nfa.eps_builder, pred_nfa.start_node)})
-            ret_end = new_end
+            pred_nfa = pred_builder.copy()
+            ret_nodes |= pred_nfa.nodes
+            for ret_end in ret_ends:
+                ret_end.add_eps_edge(pred_nfa.start_node)
+
+            ret_ends = pred_nfa.end_nodes
         else:
             new_end = nfa.nfa_node()
             ret_nodes.add(new_end)
-            ret_end.add_edges({nfa.nfa_edge(pred_builder, new_end)})
-            ret_end = new_end
+            for ret_end in ret_ends:
+                ret_end.add_edges({nfa.nfa_edge(pred_builder, new_end, str(pred_builder))})
+            ret_ends = {new_end}
 
-    ret = nfa(ret_nodes, ret_start, {ret_end})
+    ret = nfa(ret_nodes, ret_start, ret_ends)
     ret.elimit_eps()
     return ret
+
+
+# def make_or_nfa(pred_builder_list: typing.Sequence[typing.Union[nfa.pred_builder_type, nfa]]):
+#     ret_start = nfa.nfa_node()
+#     ret_end: nfa.nfa_node = ret_start
+#     ret_nodes: typing.Set[nfa.nfa_node] = {ret_start}
 
 
 class builders:
@@ -91,9 +145,10 @@ class builders:
         if isinstance(obj, nfa):
             return obj
         elif id(obj) == id(builders.any_obj):
-            return lambda: lambda l, i: (True, 1)
+            return function_with_name(lambda: lambda l, i: (True, 1), '.')
         else:
-            return lambda: lambda l, i: (True, 1) if l[i] == obj else (False, 0)
+            return function_with_name(lambda: lambda l, i: (True, 1) if l[i] == obj else (False, 0),
+                                      '<' + str(obj) + '>')
 
 
 class matching_iter:
@@ -109,25 +164,34 @@ class matching_iter:
     def at_end(self):
         return len(self.target) == self.idx
 
+    def __str__(self):
+        ret = str(id(self.node))
+        ret += ' target[' + str(self.idx) + ']'
+        return ret
+
 
 def rex_match(exp_nfa: nfa, target: typing.Sequence[typing.Any]):
     iter_set = collections.deque({matching_iter(exp_nfa, exp_nfa.start_node, target, 0)})
-    while not any(i.at_end() for i in iter_set):
-        if len(iter_set) == 0:
-            return False
+    while not len(iter_set) == 0:
         item = iter_set.pop()
         print('[debug] matching idx', item.idx)
 
         for edge in item.node.edges:
-            res, delta = edge.pred_builder()(item.target, item.idx)
+            try:
+                res, delta = edge.pred_builder()(item.target, item.idx)
+            except IndexError:
+                res, delta = False, 0
+
             if res:
                 if edge.dest in exp_nfa.end_nodes:
                     return True
                 iter_set.append(matching_iter(exp_nfa, edge.dest, item.target, item.idx + delta))
 
+    return False
+
 
 def nfa_test():
-    target = [1, 2, 3, 4, 5]
+    target = [1, 2, 3, 4]
     exp_nfa_inner = make_seq_nfa([builders.make_pred_builder(i) for i in [4, 5]])
     print('exp_nfa_inner: ', str(exp_nfa_inner))
     exp_nfa = make_seq_nfa([builders.make_pred_builder(i) for i in [1, 2, builders.any_obj, exp_nfa_inner]])
