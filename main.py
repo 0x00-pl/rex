@@ -131,10 +131,25 @@ def make_seq_nfa(pred_builder_list: typing.Sequence[typing.Union[nfa.pred_builde
     return ret
 
 
-# def make_or_nfa(pred_builder_list: typing.Sequence[typing.Union[nfa.pred_builder_type, nfa]]):
-#     ret_start = nfa.nfa_node()
-#     ret_end: nfa.nfa_node = ret_start
-#     ret_nodes: typing.Set[nfa.nfa_node] = {ret_start}
+def make_or_nfa(pred_builder_list: typing.Sequence[typing.Union[nfa.pred_builder_type, nfa]]):
+    ret_start = nfa.nfa_node()
+    ret_ends: typing.Set[nfa.nfa_node] = {ret_start}
+    ret_nodes: typing.Set[nfa.nfa_node] = {ret_start}
+    for pred_builder in pred_builder_list:
+        if isinstance(pred_builder, nfa):
+            tmp = pred_builder.copy()
+            ret_nodes |= tmp.nodes
+            ret_start.add_eps_edge(tmp.start_node)
+            ret_ends |= tmp.end_nodes
+        else:
+            new_end = nfa.nfa_node()
+            ret_start.add_edges({nfa.nfa_edge(pred_builder, new_end, str(pred_builder))})
+            ret_nodes.add(new_end)
+            ret_ends |= {new_end}
+
+    ret = nfa(ret_nodes, ret_start, ret_ends)
+    ret.elimit_eps()
+    return ret
 
 
 class builders:
@@ -192,7 +207,7 @@ def rex_match(exp_nfa: nfa, target: typing.Sequence[typing.Any]):
 
 def nfa_test():
     target = [1, 2, 3, 4]
-    exp_nfa_inner = make_seq_nfa([builders.make_pred_builder(i) for i in [4, 5]])
+    exp_nfa_inner = make_or_nfa([builders.make_pred_builder(i) for i in [4, 5]])
     print('exp_nfa_inner: ', str(exp_nfa_inner))
     exp_nfa = make_seq_nfa([builders.make_pred_builder(i) for i in [1, 2, builders.any_obj, exp_nfa_inner]])
     print('exp_nfa: ', str(exp_nfa))
