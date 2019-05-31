@@ -204,6 +204,69 @@ def rex_match(exp_nfa: nfa, target: typing.Sequence[typing.Any]):
 
     return False
 
+class rex_arguments:
+    def __init__(self):
+        self.fetch_idx = 0
+        self.value_list = []
+        self.value_dict = {}
+
+    def add(self, value, name=''):
+        self.value_list.append(value)
+        if name != '':
+            self.value_dict[name] = value
+        return self
+
+    def get(self, name=''):
+        if name != '':
+            return self.value_dict[name]
+        idx = self.fetch_idx
+        self.fetch_idx += 1
+        return self.value_list[idx]
+
+
+class nfa_builder:
+    def __init__(self, s:str, args:rex_arguments):
+        self.args = args
+        self.s = s
+        self.s_idx=0
+
+    def get_ch(self, offset=0):
+        if self.s_idx > len(self.s):
+            return None
+        ret = self.s[self.s_idx]
+        self.s_idx += offset
+        return ret
+
+    def nfa_read_name(self):
+        name = ''
+        self.get_ch(1) # for '{'
+        while self.get_ch() != '}':
+            name += self.get_ch(1)
+
+        self.get_ch(1) # for '}'
+        return name
+
+    def nfa_build_or_list(self):
+        self.get_ch(1) # for '['
+        ret = self.nfa_build_list()
+        self.get_ch(1) # for ']'
+        return make_or_nfa(ret)
+
+
+    def nfa_build_list(self):
+        ret = []
+        while self.get_ch() not in (']', None):
+            if self.get_ch() == '{':
+                name = self.nfa_read_name()
+                #TODO
+            elif self.get_ch() == '[':
+                li =
+        return ret
+
+    def nfa_builder(s, pred_list):
+        for i in range(len(s)):
+
+
 
 def nfa_test():
     target = [1, 2, 3, 4]
