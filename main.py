@@ -239,33 +239,39 @@ class nfa_builder:
 
     def nfa_read_name(self):
         name = ''
-        self.get_ch(1) # for '{'
+        self.get_ch(1)  # for '{'
         while self.get_ch() != '}':
             name += self.get_ch(1)
 
-        self.get_ch(1) # for '}'
+        self.get_ch(1)  # for '}'
         return name
-
-    def nfa_build_or_list(self):
-        self.get_ch(1) # for '['
-        ret = self.nfa_build_list()
-        self.get_ch(1) # for ']'
-        return make_or_nfa(ret)
-
 
     def nfa_build_list(self):
         ret = []
         while self.get_ch() not in (']', None):
             if self.get_ch() == '{':
                 name = self.nfa_read_name()
-                #TODO
+                ret.append(self.args.get(name))
             elif self.get_ch() == '[':
-                li =
+                ret.append(self.nfa_build_or_list())
+            elif self.get_ch() == '(':
+                ret.append(self.nfa_build_seq_list())
         return ret
 
-    def nfa_builder(s, pred_list):
-        for i in range(len(s)):
+    def nfa_build_or_list(self):
+        self.get_ch(1)  # for '['
+        ret = self.nfa_build_list()
+        self.get_ch(1)  # for ']'
+        return make_or_nfa(ret)
 
+    def nfa_build_seq_list(self):
+        self.get_ch(1)  # for '('
+        ret = self.nfa_build_list()
+        self.get_ch(1)  # for ')'
+        return make_seq_nfa(ret)
+
+    def nfa_build(self):
+        return make_seq_nfa(self.nfa_build_list())
 
 
 def nfa_test():
