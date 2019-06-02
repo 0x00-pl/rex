@@ -133,7 +133,7 @@ def make_seq_nfa(pred_builder_list: typing.Sequence[typing.Union[nfa.pred_builde
 
 def make_or_nfa(pred_builder_list: typing.Sequence[typing.Union[nfa.pred_builder_type, nfa]]):
     ret_start = nfa.nfa_node()
-    ret_ends: typing.Set[nfa.nfa_node] = {ret_start}
+    ret_ends: typing.Set[nfa.nfa_node] = set()
     ret_nodes: typing.Set[nfa.nfa_node] = {ret_start}
     for pred_builder in pred_builder_list:
         if isinstance(pred_builder, nfa):
@@ -204,6 +204,7 @@ def rex_match(exp_nfa: nfa, target: typing.Sequence[typing.Any]):
 
     return False
 
+
 class rex_arguments:
     def __init__(self):
         self.fetch_idx = 0
@@ -214,6 +215,16 @@ class rex_arguments:
         self.value_list.append(value)
         if name != '':
             self.value_dict[name] = value
+        return self
+
+    def add_list(self, value_list: list):
+        for value in value_list:
+            self.add(value)
+        return self
+
+    def add_dict(self, value_dict):
+        for name, value in value_dict.items():
+            self.add(value, name)
         return self
 
     def get(self, name=''):
@@ -228,10 +239,10 @@ class nfa_builder:
     def __init__(self, s:str, args:rex_arguments):
         self.args = args
         self.s = s
-        self.s_idx=0
+        self.s_idx = 0
 
     def get_ch(self, offset=0):
-        if self.s_idx > len(self.s):
+        if self.s_idx >= len(self.s):
             return None
         ret = self.s[self.s_idx]
         self.s_idx += offset
@@ -248,7 +259,7 @@ class nfa_builder:
 
     def nfa_build_list(self):
         ret = []
-        while self.get_ch() not in (']', None):
+        while self.get_ch() not in (']', ')', None):
             if self.get_ch() == '{':
                 name = self.nfa_read_name()
                 ret.append(self.args.get(name))
@@ -276,11 +287,16 @@ class nfa_builder:
 
 def nfa_test():
     target = [1, 2, 3, 4]
-    exp_nfa_inner = make_or_nfa([builders.make_pred_builder(i) for i in [4, 5]])
-    print('exp_nfa_inner: ', str(exp_nfa_inner))
-    exp_nfa = make_seq_nfa([builders.make_pred_builder(i) for i in [1, 2, builders.any_obj, exp_nfa_inner]])
-    print('exp_nfa: ', str(exp_nfa))
-    res = rex_match(exp_nfa, target)
+    # exp_nfa_inner = make_or_nfa([builders.make_pred_builder(i) for i in [4, 5]])
+    # print('exp_nfa_inner: ', str(exp_nfa_inner))
+    # exp_nfa = make_seq_nfa([builders.make_pred_builder(i) for i in [1, 2, builders.any_obj, exp_nfa_inner]])
+    # print('exp_nfa: ', str(exp_nfa))
+
+    #args = rex_arguments().add_list([builders.make_pred_builder(i) for i in [1, 2, 3, 4, 5]])
+    args = rex_arguments().add_dict({str(i): builders.make_pred_builder(i) for i in [1, 2, 3, 4, 5]})
+    builder_nfa = nfa_builder('{1}[{2}][({3}{4}){5}]', args).nfa_build()
+    print('builder_nfa_nfa: ', str(builder_nfa))
+    res = rex_match(builder_nfa, target)
     print('matching result:', res)
 
 
