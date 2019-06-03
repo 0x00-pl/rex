@@ -300,6 +300,34 @@ def nfa_test():
     print('matching result:', res)
 
 
+class env_stack:
+    def __init__(self):
+        self.stack = [{}]
+
+    def top(self):
+        return self.stack[-1]
+
+    def push(self):
+        self.stack.append({})
+        return self
+
+    def pop(self):
+        return self.stack.pop(-1)
+
+    def add(self, name, value):
+        self.top()[name] = value
+        return self
+
+    def get(self, name):
+        for i in range(-1, -1-len(self.stack), -1):
+            if name in self.stack[i]:
+                return self.stack[i].get(name)
+        return None
+
+
+# def rex_match_item():
+
+
 #
 #
 # class rex_value:
