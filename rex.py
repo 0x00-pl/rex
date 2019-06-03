@@ -33,6 +33,18 @@ class REXEnv:
             return last_value == value
 
 
+class REX:
+    def __init__(self, func):
+        self.func = func
+
+    def match(self, l, env=None):
+        env = env or {}
+        if not isinstance(l, utils.MatchingIter):
+            ll = utils.MatchingIter(l)
+        else:
+            ll = l
+        return self.func(ll, env)
+
 
 
 def test():
