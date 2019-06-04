@@ -45,7 +45,14 @@ class REX:
             ll = l
         return self.func(ll, env)
 
+class REXFunc:
+    def __init__(self):
+        pass
 
+    def end(self):
+        def is_end(it: utils.MatchingIter, env):
+            return it.is_end()
+        return is_end
 
 def test():
     protocol = REXFunc.with_env("protocol", REXFunc.or_(REXFunc.match_nfa("{}{}{}{}[(){}]", "h", "t", "t", "p", "s")))
