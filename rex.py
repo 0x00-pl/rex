@@ -49,10 +49,19 @@ class REXFunc:
     def __init__(self):
         pass
 
-    def end(self):
+    ty = typing.Callable[[utils.MatchingIter, REXEnv], typing.Optional[tuple[utils.MatchingIter, REXEnv]]]
+
+    @staticmethod
+    def end():
         def is_end(it: utils.MatchingIter, env):
-            return it.is_end()
+            if it.is_end():
+                return it, env
         return is_end
+
+    @staticmethod
+    def with_env(name:str, func):
+        def with_env(it: utils.MatchingIter, env:REXEnv):
+            func()
 
 def test():
     protocol = REXFunc.with_env("protocol", REXFunc.or_(REXFunc.match_nfa("{}{}{}{}[(){}]", "h", "t", "t", "p", "s")))
