@@ -185,7 +185,7 @@ class matching_iter:
         return ret
 
 
-def rex_match(exp_nfa: nfa, target: typing.Sequence[typing.Any]):
+def nfa_match(exp_nfa: nfa, target: typing.Sequence[typing.Any]):
     iter_set = collections.deque({matching_iter(exp_nfa, exp_nfa.start_node, target, 0)})
     while not len(iter_set) == 0:
         item = iter_set.pop()
@@ -205,7 +205,7 @@ def rex_match(exp_nfa: nfa, target: typing.Sequence[typing.Any]):
     return False
 
 
-class rex_arguments:
+class nfa_arguments:
     def __init__(self):
         self.fetch_idx = 0
         self.value_list = []
@@ -236,7 +236,7 @@ class rex_arguments:
 
 
 class nfa_builder:
-    def __init__(self, s:str, args:rex_arguments):
+    def __init__(self, s:str, args:nfa_arguments):
         self.args = args
         self.s = s
         self.s_idx = 0
@@ -292,11 +292,11 @@ def nfa_test():
     # exp_nfa = make_seq_nfa([builders.make_pred_builder(i) for i in [1, 2, builders.any_obj, exp_nfa_inner]])
     # print('exp_nfa: ', str(exp_nfa))
 
-    #args = rex_arguments().add_list([builders.make_pred_builder(i) for i in [1, 2, 3, 4, 5]])
-    args = rex_arguments().add_dict({str(i): builders.make_pred_builder(i) for i in [1, 2, 3, 4, 5]})
+    #args = nfa_arguments().add_list([builders.make_pred_builder(i) for i in [1, 2, 3, 4, 5]])
+    args = nfa_arguments().add_dict({str(i): builders.make_pred_builder(i) for i in [1, 2, 3, 4, 5]})
     builder_nfa = nfa_builder('{1}[{2}][({3}{4}){5}]', args).nfa_build()
     print('builder_nfa_nfa: ', str(builder_nfa))
-    res = rex_match(builder_nfa, target)
+    res = nfa_match(builder_nfa, target)
     print('matching result:', res)
 
 
@@ -336,7 +336,10 @@ class env_stack:
 
 
 def rex_make_match_item_pred(env_s: env_stack, name):
-    return lambda: lambda l,idx: (True, 1) if env_s.try_add(name, l[idx]) else (False, 0)
+    return lambda: lambda l, idx: (True, 1) if env_s.try_add(name, l[idx]) else (False, 0)
+
+
+
 
 #
 #
