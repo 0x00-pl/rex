@@ -26,7 +26,10 @@ class MatchingIter:
     def is_end(self):
         return self.idx == len(self.l)
 
-
+    def clone(self):
+        ret = MatchingIter(self.l)
+        ret.idx = self.idx
+        return ret
 
 
 
