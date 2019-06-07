@@ -9,6 +9,7 @@ class FunctionWithName:
     def __str__(self):
         return self.name
 
+
 class MatchingIter:
     def __init__(self, l):
         self.l = list(l)
@@ -30,7 +31,6 @@ class MatchingIter:
         ret = MatchingIter(self.l)
         ret.idx = self.idx
         return ret
-
 
 
 class Transitions:
