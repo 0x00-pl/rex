@@ -32,6 +32,9 @@ class MatchingIter:
         ret.idx = self.idx
         return ret
 
+    def clip(self, until_idx: int):
+        return self.l[self.idx:until_idx]
+
 
 class Transitions:
     any_obj = object()

@@ -61,7 +61,8 @@ class REXFunc:
     @staticmethod
     def with_env(name:str, func):
         def with_env(it: utils.MatchingIter, env:REXEnv):
-            func()
+            rit, renv = func(it, env)
+
 
 def test():
     protocol = REXFunc.with_env("protocol", REXFunc.or_(REXFunc.match_nfa("{}{}{}{}[(){}]", "h", "t", "t", "p", "s")))
