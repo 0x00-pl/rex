@@ -1,18 +1,6 @@
 import collections
 import typing
-
-
-class function_with_name:
-    def __init__(self, func, name):
-        self.func = func
-        self.name = name
-
-    def __call__(self, *args, **kwargs):
-        return self.func(*args, **kwargs)
-
-    def __str__(self):
-        return self.name
-
+import utils
 
 class nfa:
     # () -> (list, index) -> (matched, index_delta)
@@ -25,7 +13,7 @@ class nfa:
             self.dest = dest
             self.name = name
 
-    eps_builder: pred_builder_type = function_with_name(lambda: lambda l, idx: (True, 0), 'eps')
+    eps_builder: pred_builder_type = utils.FunctionWithName(lambda: lambda l, idx: (True, 0), 'eps')
 
     class nfa_node:
         def __init__(self, edges: typing.AbstractSet['nfa.nfa_edge'] = None):
@@ -160,9 +148,9 @@ class builders:
         if isinstance(obj, nfa):
             return obj
         elif id(obj) == id(builders.any_obj):
-            return function_with_name(lambda: lambda l, i: (True, 1), '.')
+            return utils.FunctionWithName(lambda: lambda l, i: (True, 1), '.')
         else:
-            return function_with_name(lambda: lambda l, i: (True, 1) if l[i] == obj else (False, 0),
+            return utils.FunctionWithName(lambda: lambda l, i: (True, 1) if l[i] == obj else (False, 0),
                                       '<' + str(obj) + '>')
 
 
