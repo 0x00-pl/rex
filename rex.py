@@ -32,6 +32,11 @@ class REXEnv:
         else:
             return last_value == value
 
+    def __enter__(self):
+        self.push_env()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.pop_env()
 
 class REX:
     def __init__(self, func):
@@ -61,7 +66,11 @@ class REXFunc:
     @staticmethod
     def with_env(name:str, func):
         def with_env(it: utils.MatchingIter, env:REXEnv):
+            env.push_env()
             rit, renv = func(it, env)
+            clip = it.clip(rit.idx)
+            env.match_value()
+            env.pop_env()
 
 
 def test():
