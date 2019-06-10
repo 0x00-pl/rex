@@ -1,4 +1,5 @@
 import typing
+
 import utils
 
 
@@ -6,8 +7,8 @@ class REXEnv:
     VALUE_UNBOUND = object()
 
     def __init__(self):
-        self.env_stack:[dict] = [{}]
-        self.matching_functions:[typing.Callable[[utils.MatchingIter, dict], bool]] = []
+        self.env_stack: [dict] = [{}]
+        self.matching_functions: [typing.Callable[[utils.MatchingIter, dict], bool]] = []
 
     def push_env(self):
         self.env_stack.append({})
@@ -38,6 +39,7 @@ class REXEnv:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.pop_env()
 
+
 class REX:
     def __init__(self, func):
         self.func = func
@@ -50,6 +52,7 @@ class REX:
             ll = l
         return self.func(ll, env)
 
+
 class REXFunc:
     def __init__(self):
         pass
@@ -61,11 +64,12 @@ class REXFunc:
         def is_end(it: utils.MatchingIter, env):
             if it.is_end():
                 return it, env
+
         return is_end
 
     @staticmethod
-    def with_env(name:str, func):
-        def with_env(it: utils.MatchingIter, env:REXEnv):
+    def with_env(name: str, func):
+        def with_env(it: utils.MatchingIter, env: REXEnv):
             env.push_env()
             rit, renv = func(it, env)
             clip = it.clip(rit.idx)
