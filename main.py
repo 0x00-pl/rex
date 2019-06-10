@@ -21,7 +21,7 @@ class NFA:
             self.edges: typing.MutableSet['NFA.nfa_edge'] = set(edges) if edges is not None else set()
 
         def copy(self):
-            return nfa.nfa_node(self.edges)
+            return NFA.nfa_node(self.edges)
 
         def add_edges(self, edges: typing.AbstractSet['NFA.nfa_edge']):
             self.edges |= edges
@@ -82,7 +82,7 @@ class NFA:
             for edge in new_node.edges:
                 edge.dest = mapping[edge.dest]
 
-        return nfa(set(mapping.values()), mapping[self.start_node], set(mapping[i]for i in self.end_nodes))
+        return NFA(set(mapping.values()), mapping[self.start_node], set(mapping[i]for i in self.end_nodes))
 
     def __str__(self):
         ret = 'https://www.planttext.com/\n@startuml\n\n'
@@ -291,6 +291,7 @@ def nfa_test():
 
 class env_stack:
     no_value = {}
+
     def __init__(self):
         self.stack = [{}]
 
