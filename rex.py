@@ -64,17 +64,24 @@ class REXFunc:
         def is_end(it: utils.MatchingIter, env):
             if it.is_end():
                 return it, env
+            else:
+                return None
 
         return is_end
 
     @staticmethod
     def with_env(name: str, func):
         def with_env(it: utils.MatchingIter, env: REXEnv):
-            env.push_env()
-            rit, renv = func(it, env)
-            clip = it.clip(rit.idx)
-            env.match_value()
-            env.pop_env()
+            fr = func(it, env)
+            if fr is None:
+                return None
+            clip = it.clip(fr[0].idx)
+            if env.match_value(name, clip):
+                return fr
+            else:
+                return None
+        return with_env
+
 
 
 def test():
