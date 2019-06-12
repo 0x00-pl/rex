@@ -58,7 +58,7 @@ class NFA:
 
         self.nodes = keep_nodes
 
-    def elimit_eps(self):
+    def eliminate_eps(self):
         edges_need_be_removed = set()
         for node in self.nodes:
             for edge in node.edges:
@@ -73,7 +73,7 @@ class NFA:
         self.gc_nodes()
 
     def copy(self):
-        mapping: typing.Mapping['NFA.Node', 'NFA.Node'] = {}
+        mapping: typing.MutableMapping['NFA.Node', 'NFA.Node'] = {}
         for node in self.nodes:
             mapping[node] = node.copy()
 
@@ -116,7 +116,7 @@ def make_seq_nfa(pred_builder_list: typing.Sequence[typing.Union[NFA.pred_builde
             ret_ends = {new_end}
 
     ret = NFA(ret_nodes, ret_start, ret_ends)
-    ret.elimit_eps()
+    ret.eliminate_eps()
     return ret
 
 
@@ -137,7 +137,7 @@ def make_or_nfa(pred_builder_list: typing.Sequence[typing.Union[NFA.pred_builder
             ret_ends |= {new_end}
 
     ret = NFA(ret_nodes, ret_start, ret_ends)
-    ret.elimit_eps()
+    ret.eliminate_eps()
     return ret
 
 
