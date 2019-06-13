@@ -9,9 +9,9 @@ class NFA:
         [], typing.Callable[[typing.Sequence[typing.Any], int], typing.Tuple[bool, int]]]
 
     class Edge:
-        def __init__(self, pred_builder: 'NFA.pred_builder_type', dest: 'NFA.Node', name=None):
+        def __init__(self, pred_builder: 'NFA.pred_builder_type', dst: 'NFA.Node', name=None):
             self.pred_builder = pred_builder
-            self.dest = dest
+            self.dst = dst
             self.name = name
 
     eps_builder: pred_builder_type = utils.FunctionWithName(lambda: lambda l, idx: (True, 0), 'eps')
@@ -35,7 +35,7 @@ class NFA:
         def __str__(self):
             ret = ''
             for edge in self.edges:
-                ret += str(id(self)) + ' --> ' + str(id(edge.dest)) + (' : ' + edge.name if edge.name else '') + '\n'
+                ret += str(id(self)) + ' --> ' + str(id(edge.dst)) + (' : ' + edge.name if edge.name else '') + '\n'
 
             return ret
 
@@ -51,7 +51,7 @@ class NFA:
         while len(edge_nodes) > 0:
             item = edge_nodes.pop()
             for edge in item.edges:
-                dest = edge.dest
+                dest = edge.dst
                 if dest not in keep_nodes:
                     keep_nodes.add(dest)
                     edge_nodes.add(dest)
@@ -67,7 +67,7 @@ class NFA:
                     break
 
         for src_node, edge in edges_need_be_removed:
-            src_node.add_edges(edge.dest.edges)
+            src_node.add_edges(edge.dst.edges)
             src_node.discard_edge(edge)
 
         self.gc_nodes()
@@ -80,7 +80,7 @@ class NFA:
         # relink
         for new_node in mapping.values():
             for edge in new_node.edges:
-                edge.dest = mapping[edge.dest]
+                edge.dst = mapping[edge.dst]
 
         return NFA(set(mapping.values()), mapping[self.start_node], set(mapping[i]for i in self.end_nodes))
 
@@ -187,9 +187,9 @@ def nfa_match(exp_nfa: NFA, target: typing.Sequence[typing.Any]):
                 res, delta = False, 0
 
             if res:
-                if edge.dest in exp_nfa.end_nodes:
+                if edge.dst in exp_nfa.end_nodes:
                     return True
-                iter_set.append(matching_iter(exp_nfa, edge.dest, item.target, item.idx + delta))
+                iter_set.append(matching_iter(exp_nfa, edge.dst, item.target, item.idx + delta))
 
     return False
 
