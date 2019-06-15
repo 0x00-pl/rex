@@ -82,7 +82,7 @@ class NFA:
             for edge in new_node.edges:
                 edge.dst = mapping[edge.dst]
 
-        return NFA(set(mapping.values()), mapping[self.start_node], set(mapping[i]for i in self.end_nodes))
+        return NFA(set(mapping.values()), mapping[self.start_node], set(mapping[i] for i in self.end_nodes))
 
     def __str__(self):
         ret = 'https://www.planttext.com/\n@startuml\n\n'
@@ -152,7 +152,7 @@ class builders:
             return utils.FunctionWithName(lambda: lambda l, i: (True, 1), '.')
         else:
             return utils.FunctionWithName(lambda: lambda l, i: (True, 1) if l[i] == obj else (False, 0),
-                                      '<' + str(obj) + '>')
+                                          '<' + str(obj) + '>')
 
 
 class matching_iter:
@@ -281,7 +281,7 @@ def nfa_test():
     # exp_nfa = make_seq_nfa([builders.make_transition_builder(i) for i in [1, 2, builders.any_obj, exp_nfa_inner]])
     # print('exp_nfa: ', str(exp_nfa))
 
-    #args = nfa_arguments().add_list([builders.make_transition_builder(i) for i in [1, 2, 3, 4, 5]])
+    # args = nfa_arguments().add_list([builders.make_transition_builder(i) for i in [1, 2, 3, 4, 5]])
     args = nfa_arguments().add_dict({str(i): builders.make_transition_builder(i) for i in [1, 2, 3, 4, 5]})
     builder_nfa = nfa_builder('{1}[{2}][({3}{4}){5}]', args).nfa_build()
     print('builder_nfa_nfa: ', str(builder_nfa))
@@ -310,7 +310,7 @@ class env_stack:
         return self
 
     def get(self, name):
-        for i in range(-1, -1-len(self.stack), -1):
+        for i in range(-1, -1 - len(self.stack), -1):
             if name in self.stack[i]:
                 return self.stack[i].get(name)
         return env_stack.no_value
