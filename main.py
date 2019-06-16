@@ -4,9 +4,8 @@ import utils
 
 
 class NFA:
-    # () -> (list, index) -> (matched, index_delta)
-    transition_builder_type = typing.Callable[
-        [], typing.Callable[[typing.Sequence[typing.Any], int], typing.Tuple[bool, int]]]
+    # (list, index) -> (matched, index_delta)
+    transition_builder_type = typing.Callable[[typing.Sequence[typing.Any], int], typing.Tuple[bool, int]]
 
     class Edge:
         def __init__(self, transition_builder: 'NFA.transition_builder_type', dst: 'NFA.Node', name=None):
@@ -14,7 +13,7 @@ class NFA:
             self.dst = dst
             self.name = name
 
-    eps_builder: transition_builder_type = utils.FunctionWithName(lambda: lambda l, idx: (True, 0), 'eps')
+    eps_builder: transition_builder_type = utils.FunctionWithName(lambda l, idx: (True, 0), 'eps')
 
     class Node:
         def __init__(self, edges: typing.AbstractSet['NFA.Edge'] = None):
@@ -149,9 +148,9 @@ class builders:
         if isinstance(obj, NFA):
             return obj
         elif id(obj) == id(builders.any_obj):
-            return utils.FunctionWithName(lambda: lambda l, i: (True, 1), '.')
+            return utils.FunctionWithName(lambda l, i: (True, 1), '.')
         else:
-            return utils.FunctionWithName(lambda: lambda l, i: (True, 1) if l[i] == obj else (False, 0),
+            return utils.FunctionWithName(lambda l, i: (True, 1) if l[i] == obj else (False, 0),
                                           '<' + str(obj) + '>')
 
 
@@ -182,7 +181,7 @@ def nfa_match(exp_nfa: NFA, target: typing.Sequence[typing.Any]):
 
         for edge in item.node.edges:
             try:
-                res, delta = edge.transition_builder()(item.target, item.idx)
+                res, delta = edge.transition_builder(item.target, item.idx)
             except IndexError:
                 res, delta = False, 0
 
