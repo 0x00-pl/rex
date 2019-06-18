@@ -5,15 +5,15 @@ import utils
 
 class NFA:
     # (list, index) -> (matched, index_delta)
-    transition_builder_type = typing.Callable[[typing.Sequence[typing.Any], int], typing.Tuple[bool, int]]
+    transition_type = typing.Callable[[typing.Sequence[typing.Any], int], typing.Tuple[bool, int]]
 
     class Edge:
-        def __init__(self, transition_builder: 'NFA.transition_builder_type', dst: 'NFA.Node', name=None):
-            self.transition_builder = transition_builder
+        def __init__(self, transition: 'NFA.transition_type', dst: 'NFA.Node', name=None):
+            self.transition = transition
             self.dst = dst
             self.name = name
 
-    eps_builder: transition_builder_type = utils.FunctionWithName(lambda l, idx: (True, 0), 'eps')
+    eps_builder: transition_type = utils.FunctionWithName(lambda l, idx: (True, 0), 'eps')
 
     class Node:
         def __init__(self, edges: typing.AbstractSet['NFA.Edge'] = None):
@@ -61,7 +61,7 @@ class NFA:
         edges_need_be_removed = set()
         for node in self.nodes:
             for edge in node.edges:
-                if edge.transition_builder == self.eps_builder:
+                if edge.transition == self.eps_builder:
                     edges_need_be_removed.add((node, edge))
                     break
 
@@ -95,13 +95,13 @@ class NFA:
         return ret
 
 
-def make_seq_nfa(transition_builder_list: typing.Sequence[typing.Union[NFA.transition_builder_type, NFA]]):
+def make_seq_nfa(transition_list: typing.Sequence[typing.Union[NFA.transition_type, NFA]]):
     ret_start = NFA.Node()
     ret_ends: typing.Set[NFA.Node] = {ret_start}
     ret_nodes: typing.Set[NFA.Node] = {ret_start}
-    for transition_builder in transition_builder_list:
-        if isinstance(transition_builder, NFA):
-            transition_nfa = transition_builder.copy()
+    for transition in transition_list:
+        if isinstance(transition, NFA):
+            transition_nfa = transition.copy()
             ret_nodes |= transition_nfa.nodes
             for ret_end in ret_ends:
                 ret_end.add_eps_edge(transition_nfa.start_node)
@@ -111,7 +111,7 @@ def make_seq_nfa(transition_builder_list: typing.Sequence[typing.Union[NFA.trans
             new_end = NFA.Node()
             ret_nodes.add(new_end)
             for ret_end in ret_ends:
-                ret_end.add_edges({NFA.Edge(transition_builder, new_end, str(transition_builder))})
+                ret_end.add_edges({NFA.Edge(transition, new_end, str(transition))})
             ret_ends = {new_end}
 
     ret = NFA(ret_nodes, ret_start, ret_ends)
@@ -119,19 +119,19 @@ def make_seq_nfa(transition_builder_list: typing.Sequence[typing.Union[NFA.trans
     return ret
 
 
-def make_or_nfa(transition_builder_list: typing.Sequence[typing.Union[NFA.transition_builder_type, NFA]]):
+def make_or_nfa(transition_list: typing.Sequence[typing.Union[NFA.transition_type, NFA]]):
     ret_start = NFA.Node()
     ret_ends: typing.Set[NFA.Node] = set()
     ret_nodes: typing.Set[NFA.Node] = {ret_start}
-    for transition_builder in transition_builder_list:
-        if isinstance(transition_builder, NFA):
-            tmp = transition_builder.copy()
+    for transition in transition_list:
+        if isinstance(transition, NFA):
+            tmp = transition.copy()
             ret_nodes |= tmp.nodes
             ret_start.add_eps_edge(tmp.start_node)
             ret_ends |= tmp.end_nodes
         else:
             new_end = NFA.Node()
-            ret_start.add_edges({NFA.Edge(transition_builder, new_end, str(transition_builder))})
+            ret_start.add_edges({NFA.Edge(transition, new_end, str(transition))})
             ret_nodes.add(new_end)
             ret_ends |= {new_end}
 
@@ -144,7 +144,7 @@ class builders:
     any_obj = object()
 
     @staticmethod
-    def make_transition_builder(obj):
+    def make_transition(obj):
         if isinstance(obj, NFA):
             return obj
         elif id(obj) == id(builders.any_obj):
@@ -181,7 +181,7 @@ def nfa_match(exp_nfa: NFA, target: typing.Sequence[typing.Any]):
 
         for edge in item.node.edges:
             try:
-                res, delta = edge.transition_builder(item.target, item.idx)
+                res, delta = edge.transition(item.target, item.idx)
             except IndexError:
                 res, delta = False, 0
 
@@ -275,13 +275,13 @@ class nfa_builder:
 
 def nfa_test():
     target = [1, 2, 3, 4]
-    # exp_nfa_inner = make_or_nfa([builders.make_transition_builder(i) for i in [4, 5]])
+    # exp_nfa_inner = make_or_nfa([builders.make_transition(i) for i in [4, 5]])
     # print('exp_nfa_inner: ', str(exp_nfa_inner))
-    # exp_nfa = make_seq_nfa([builders.make_transition_builder(i) for i in [1, 2, builders.any_obj, exp_nfa_inner]])
+    # exp_nfa = make_seq_nfa([builders.make_transition(i) for i in [1, 2, builders.any_obj, exp_nfa_inner]])
     # print('exp_nfa: ', str(exp_nfa))
 
-    # args = nfa_arguments().add_list([builders.make_transition_builder(i) for i in [1, 2, 3, 4, 5]])
-    args = nfa_arguments().add_dict({str(i): builders.make_transition_builder(i) for i in [1, 2, 3, 4, 5]})
+    # args = nfa_arguments().add_list([builders.make_transition(i) for i in [1, 2, 3, 4, 5]])
+    args = nfa_arguments().add_dict({str(i): builders.make_transition(i) for i in [1, 2, 3, 4, 5]})
     builder_nfa = nfa_builder('{1}[{2}][({3}{4}){5}]', args).nfa_build()
     print('builder_nfa_nfa: ', str(builder_nfa))
     res = nfa_match(builder_nfa, target)
