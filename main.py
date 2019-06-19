@@ -289,7 +289,7 @@ def nfa_test():
 
 
 class env_stack:
-    no_value = {}
+    no_value = object()
 
     def __init__(self):
         self.stack = [{}]
