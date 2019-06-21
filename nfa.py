@@ -1,4 +1,5 @@
 import typing
+
 import utils
 
 
@@ -11,14 +12,13 @@ class MatchingIter:
         self.idx += delta
 
     def get_delta(self, delta):
-        return self.l[self.idx+delta]
+        return self.l[self.idx + delta]
 
     def get(self):
         return self.get_delta(0)
 
 
 class NFA:
-
     trans_func_type = typing.Callable[[MatchingIter], typing.Optional[int]]
 
     class Edge:
@@ -46,9 +46,12 @@ class NFA:
             self.edges.discard(edge)
 
         def __str__(self):
+            return str(id(self))
+
+        def edges_to_string(self):
             ret = ''
             for edge in self.edges:
-                ret += str(id(self)) + ' --> ' + str(id(edge.dst)) + (' : ' + edge.name if edge.name else '') + '\n'
+                ret += str(self) + ' --> ' + str(edge.dst) + (' : ' + edge.name if edge.name else '') + '\n'
 
             return ret
 
@@ -99,12 +102,12 @@ class NFA:
 
     def __str__(self):
         ret = 'https://www.planttext.com/\n@startuml\n\n'
-        ret += str(id(self.start_node)) + ' : start\n'
-        for node in self.end_nodes:
-            ret += str(id(node)) + ' : end\n'
-
         for node in self.nodes:
-            ret += str(node)
+            ret += node.edges_to_string()
+        ret += str(self.start_node) + ' : start\n'
+        for node in self.end_nodes:
+            ret += str(node) + ' : end\n'
+
         ret += '\n@enduml\n'
         return ret
 
@@ -156,39 +159,48 @@ def make_or_nfa(transition_list: typing.Sequence[typing.Union[NFA.trans_func_typ
 
 class StatePool:
     def __init__(self):
-        self.states = {0:set()}
+        self.states = {0: set()}
 
     def tick(self):
-        assert(len(self.states[0]) == 0)
+        assert (len(self.states[0]) == 0)
         new_states = dict()
-        for k,v in self.states.items():
+        for k, v in self.states.items():
             if len(v) != 0:
-                new_states[k-1] = v
+                new_states[k - 1] = v
 
         self.states = new_states
 
-    def add_state(self, node:NFA.Node, delta: int):
+    def add_state(self, node: NFA.Node, delta: int):
         p = self.states.get(delta, set())
         p.add(node)
         self.states[delta] = p
 
-    def pop_state(self)->typing.Iterable[NFA.Node]:
+    def pop_state(self) -> typing.Iterable[NFA.Node]:
         p = self.states.get(0, set())
         while len(p) != 0:
             yield p.pop()
 
     def __len__(self):
-        return sum(len(v) for k,v in self.states.items())
+        return sum(len(v) for k, v in self.states.items())
+
+    def __str__(self):
+        ret = 'states:\n'
+        for k, v in self.states.items():
+            ret += '[' + str(k) + ']:' + ' '.join([str(it) for it in v]) + '\n'
+        return ret
 
 
 def nfa_match(nfa: NFA, target: MatchingIter):
     states = StatePool()
     states.add_state(nfa.start_node, 0)
 
-    while len(states) > 0 and target.idx < len(target.l):
+    while len(states) > 0 and target.idx <= len(target.l):
         for state in states.pop_state():
             if state in nfa.end_nodes:
                 return True
+
+            if target.idx == len(target.l):
+                return False
 
             for edge in state.edges:
                 next_state = edge.dst
@@ -201,3 +213,63 @@ def nfa_match(nfa: NFA, target: MatchingIter):
 
     return False
 
+
+class NFABuilder:
+    def __init__(self, s: str, args: utils.RexArguments):
+        self.args = args
+        self.s = s
+        self.s_idx = 0
+
+    def get_ch(self, offset=0):
+        if self.s_idx >= len(self.s):
+            return None
+        ret = self.s[self.s_idx]
+        self.s_idx += offset
+        return ret
+
+    def nfa_read_name(self):
+        name = ''
+        self.get_ch(1)  # for '{'
+        while self.get_ch() != '}':
+            name += self.get_ch(1)
+
+        self.get_ch(1)  # for '}'
+        return name
+
+    def nfa_build_list(self):
+        ret = []
+        while self.get_ch() not in (']', ')', None):
+            if self.get_ch() == '{':
+                name = self.nfa_read_name()
+                ret.append(self.args.get(name))
+            elif self.get_ch() == '[':
+                ret.append(self.nfa_build_or_list())
+            elif self.get_ch() == '(':
+                ret.append(self.nfa_build_seq_list())
+        return ret
+
+    def nfa_build_or_list(self):
+        self.get_ch(1)  # for '['
+        ret = self.nfa_build_list()
+        self.get_ch(1)  # for ']'
+        return make_or_nfa(ret)
+
+    def nfa_build_seq_list(self):
+        self.get_ch(1)  # for '('
+        ret = self.nfa_build_list()
+        self.get_ch(1)  # for ')'
+        return make_seq_nfa(ret)
+
+    def nfa_build(self):
+        return make_seq_nfa(self.nfa_build_list())
+
+
+def test():
+    nfa = NFABuilder('{}{}{}{}{}', utils.RexArguments().add_list(
+        [utils.Transitions.eq(it, ()) for it in [1, 2, 3, 4, 5]])).nfa_build()
+    print(nfa)
+    match_result = nfa_match(nfa, MatchingIter([1, 2, 3, 4, 5]))
+    print(match_result)
+
+if __name__ == '__main__':
+    test()
