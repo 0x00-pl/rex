@@ -17,6 +17,9 @@ class MatchingIter:
     def get(self):
         return self.get_delta(0)
 
+    def is_end(self):
+        return self.idx == len(self.l)
+
 
 class NFA:
     trans_func_type = typing.Callable[[MatchingIter], typing.Optional[int]]
@@ -266,10 +269,11 @@ class NFABuilder:
 
 def test():
     nfa = NFABuilder('{}{}{}{}{}', utils.RexArguments().add_list(
-        [utils.Transitions.eq(it, ()) for it in [1, 2, 3, 4, 5]])).nfa_build()
+        [utils.Transitions.eq(it, ()) for it in [1, 2, 3, utils.Transitions.any_obj, 5]])).nfa_build()
     print(nfa)
-    match_result = nfa_match(nfa, MatchingIter([1, 2, 3, 4, 5]))
-    print(match_result)
+    match_iter = MatchingIter([1, 2, 3, 4, 5])
+    match_result = nfa_match(nfa, match_iter)
+    print(match_result, match_iter.is_end())
 
 if __name__ == '__main__':
     test()
