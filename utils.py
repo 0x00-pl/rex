@@ -9,6 +9,24 @@ class FunctionWithName:
     def __str__(self):
         return self.name
 
+class MatchingIter:
+    def __init__(self, l):
+        self.l = list(l)
+        self.idx = 0
+
+    def move_delta(self, delta):
+        self.idx += delta
+
+    def get_delta(self, delta):
+        return self.l[self.idx + delta]
+
+    def get(self):
+        return self.get_delta(0)
+
+    def is_end(self):
+        return self.idx == len(self.l)
+
+
 
 class Transitions:
     any_obj = object()

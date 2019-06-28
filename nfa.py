@@ -3,26 +3,10 @@ import typing
 import utils
 
 
-class MatchingIter:
-    def __init__(self, l):
-        self.l = list(l)
-        self.idx = 0
-
-    def move_delta(self, delta):
-        self.idx += delta
-
-    def get_delta(self, delta):
-        return self.l[self.idx + delta]
-
-    def get(self):
-        return self.get_delta(0)
-
-    def is_end(self):
-        return self.idx == len(self.l)
 
 
 class NFA:
-    trans_func_type = typing.Callable[[MatchingIter], typing.Optional[int]]
+    trans_func_type = typing.Callable[[utils.MatchingIter], typing.Optional[int]]
 
     class Edge:
         def __init__(self, transition: 'NFA.trans_func_type', dst: 'NFA.Node', name=None):
@@ -193,7 +177,7 @@ class StatePool:
         return ret
 
 
-def nfa_match(nfa: NFA, target: MatchingIter):
+def nfa_match(nfa: NFA, target: utils.MatchingIter):
     states = StatePool()
     states.add_state(nfa.start_node, 0)
 
@@ -271,7 +255,7 @@ def test():
     nfa = NFABuilder('{}{}{}{}{}', utils.RexArguments().add_list(
         [utils.Transitions.eq(it, ()) for it in [1, 2, 3, utils.Transitions.any_obj, 5]])).nfa_build()
     print(nfa)
-    match_iter = MatchingIter([1, 2, 3, 4, 5])
+    match_iter = utils.MatchingIter([1, 2, 3, 4, 5])
     match_result = nfa_match(nfa, match_iter)
     print(match_result, match_iter.is_end())
 
