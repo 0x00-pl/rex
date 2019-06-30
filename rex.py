@@ -9,7 +9,6 @@ class REXEnv:
         self.env_stack:[dict] = [{}]
         self.matching_functions:[typing.Callable[[utils.MatchingIter, dict], bool]] = []
 
-
     def push_env(self):
         self.env_stack.append({})
 
@@ -33,3 +32,17 @@ class REXEnv:
         else:
             return last_value == value
 
+
+
+
+def test():
+    protocol = REXFunc.with_env("protocol", REXFunc.or_(REXFunc.match_nfa("{}{}{}{}[(){}]", "h", "t", "t", "p", "s")))
+    digits = utils.FunctionWithName(is_ip_digits, "ip_digits")
+    digits_4x = REXFunc.seq(
+        REXFunc.with_env("digits0", digits), REXFunc.eq('.'),
+        REXFunc.with_env("digits1", digits), REXFunc.eq('.'),
+        REXFunc.with_env("digits2", digits), REXFunc.eq('.'),
+        REXFunc.with_env("digits3", digits))
+    rex = REXFunc.seq(protocol, REXFunc.eq_list('://'), digits_4x, REXFunc.end())
+    result_env = rex.match("https://114.114.114.114")
+    print(result_env)
