@@ -37,12 +37,12 @@ class REXEnv:
 
 def test():
     protocol = REXFunc.with_env("protocol", REXFunc.or_(REXFunc.match_nfa("{}{}{}{}[(){}]", "h", "t", "t", "p", "s")))
-    digits = utils.FunctionWithName(is_ip_digits, "ip_digits")
+    digits = utils.FunctionWithName(is_digits_0_to_255, "ip_digits")
     digits_4x = REXFunc.seq(
         REXFunc.with_env("digits0", digits), REXFunc.eq('.'),
         REXFunc.with_env("digits1", digits), REXFunc.eq('.'),
         REXFunc.with_env("digits2", digits), REXFunc.eq('.'),
         REXFunc.with_env("digits3", digits))
     rex = REXFunc.seq(protocol, REXFunc.eq_list('://'), digits_4x, REXFunc.end())
-    result_env = rex.match("https://114.114.114.114")
+    result_env = rex.match("https://114.114.114.114", env={})
     print(result_env)
