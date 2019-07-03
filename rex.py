@@ -80,8 +80,8 @@ class REXFunc:
                 return fr
             else:
                 return None
-        return with_env
 
+        return with_env
 
 
 def test():
