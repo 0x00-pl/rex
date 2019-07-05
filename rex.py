@@ -6,38 +6,29 @@ import utils
 class REXEnv:
     VALUE_UNBOUND = object()
 
-    # def __init__(self):
-    #     self.env_stack: [dict] = [{}]
-    #     self.matching_functions: [typing.Callable[[utils.MatchingIter, dict], bool]] = []
-    #
-    # def push_env(self):
-    #     self.env_stack.append({})
-    #
-    # def pop_env(self):
-    #     self.env_stack.pop(-1)
-    #
-    # def add_to_current_env(self, key, value):
-    #     self.env_stack[-1][key] = value
-    #
-    # def get_value(self, key):
-    #     for idx in reversed(range(len(self.env_stack))):
-    #         ret = self.env_stack[idx].get(key, REXEnv.VALUE_UNBOUND)
-    #         if ret != REXEnv.VALUE_UNBOUND:
-    #             return ret
-    #
-    # def match_value(self, key, value):
-    #     last_value = self.get_value(key)
-    #     if last_value == REXEnv.VALUE_UNBOUND:
-    #         self.add_to_current_env(key, value)
-    #         return True
-    #     else:
-    #         return last_value == value
-    #
-    # def __enter__(self):
-    #     self.push_env()
-    #
-    # def __exit__(self, exc_type, exc_val, exc_tb):
-    #     self.pop_env()
+    def __init__(self, prev_env=None):
+        self.data = {}
+        self.prev_env = prev_env
+
+    def fork(self):
+        return REXEnv(prev_env=self)
+
+    def get_value(self, key, default=None):
+        cur = self.data.get(key, REXEnv.VALUE_UNBOUND)
+        if cur != REXEnv.VALUE_UNBOUND:
+            return cur
+        elif self.prev_env:
+            return self.prev_env.get_value(key, default)
+        else:
+            return default
+
+    def match_value(self, key, value):
+        val = self.get_value(key, REXEnv.VALUE_UNBOUND)
+        if val == REXEnv.VALUE_UNBOUND:
+            self.data[key] = value
+            return True
+        else:
+            return val == value
 
 
 class REX:
