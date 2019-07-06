@@ -78,8 +78,29 @@ class REXFunc:
     def or_(*args):
         def or_(it: utils.MatchingIter, env: REXEnv):
             for func in args:
-                env.push_env()
-                func(it, env)
+                new_env = env.fork()
+                fr = func(it, new_env)
+                if fr is None:
+                    continue
+                else:
+                    return fr
+            else:
+                return None
+        return or_
+
+    @staticmethod
+    def seq(*args):
+        def seq(it: utils.MatchingIter, env: REXEnv):
+            env = env.fork()
+            for func in args:
+                fr = func(it, env)
+                if fr is None:
+                    return None
+                else:
+                    it, env = fr
+
+            return it, env
+        return seq
 
 
 
