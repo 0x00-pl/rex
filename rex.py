@@ -86,6 +86,7 @@ class REXFunc:
                     return fr
             else:
                 return None
+
         return or_
 
     @staticmethod
@@ -100,9 +101,8 @@ class REXFunc:
                     it, env = fr
 
             return it, env
+
         return seq
-
-
 
 
 def test():
