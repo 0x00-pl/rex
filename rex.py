@@ -99,10 +99,31 @@ class REXFunc:
                     return None
                 else:
                     it, env = fr
-
             return it, env
 
         return seq
+
+    @staticmethod
+    def eq(val):
+        def eq(it: utils.MatchingIter, env: REXEnv):
+            if it.get() == val:
+                new_it = it.clone()
+                new_it.move_delta(1)
+                return new_it, env
+            else:
+                return None
+        return eq
+
+    @staticmethod
+    def eq_list(val_list):
+        def eq_list(it: utils.MatchingIter, env: REXEnv):
+            # if it.get() == val:
+            #     new_it = it.clone()
+            #     new_it.move_delta(1)
+            #     return new_it, env
+            # else:
+            #     return None
+        return eq_list
 
 
 def test():
@@ -113,6 +134,6 @@ def test():
         REXFunc.with_env("digits1", digits), REXFunc.eq('.'),
         REXFunc.with_env("digits2", digits), REXFunc.eq('.'),
         REXFunc.with_env("digits3", digits))
-    rex = REXFunc.seq(protocol, REXFunc.eq_list('://'), digits_4x, REXFunc.end())
+    rex = REX(REXFunc.seq(protocol, REXFunc.eq_list('://'), digits_4x, REXFunc.end()))
     result_env = rex.match("https://114.114.114.114", env={})
     print(result_env)
