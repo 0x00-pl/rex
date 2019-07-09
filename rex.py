@@ -116,13 +116,14 @@ class REXFunc:
 
     @staticmethod
     def eq_list(val_list):
+        val_list_len = len(val_list)
         def eq_list(it: utils.MatchingIter, env: REXEnv):
-            # if it.get() == val:
-            #     new_it = it.clone()
-            #     new_it.move_delta(1)
-            #     return new_it, env
-            # else:
-            #     return None
+            if it.clip(it.idx+val_list_len) == val_list:
+                new_it = it.clone()
+                new_it.move_delta(val_list_len)
+                return new_it, env
+            else:
+                return None
         return eq_list
 
 
